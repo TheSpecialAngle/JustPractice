@@ -1,0 +1,2 @@
+E:\Git\本地仓\JustPractice\pushing\Debug\pushing.exe
+E:\Git\本地仓\JustPractice\pushing\Debug\pushing.pdb

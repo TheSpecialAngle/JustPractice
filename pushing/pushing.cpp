@@ -1,17 +1,15 @@
-﻿// pushing.cpp : 此文件包含 "main" 函数。程序执行将在此处开始并结束。
-//
-
-#include <iostream>
+﻿#include <iostream>
 using namespace std;
 
 //首先用一个容易理解的字符串对该变量赋值，游戏开始后再将其转化为其他形式。
 //字符串换行现实时 ： '\'
 
+//可以用另一个数据文件来描述，并在程序中读取。
 const char gStageData[] = "\
 ########\n\
-# .. p #\n\
+# ..   #\n\
 # oo   #\n\
-#      #\n\
+# p    #\n\
 ########";
 
 const int gStageWidth = 8;
@@ -21,6 +19,7 @@ const int gStageHeight = 5;
 //直接使用数组的话，可能因为疏忽代入无意义的值，枚举类型不会出现这种问题，且在调试的时候可以看见枚举类型的名字
 //是否在GOAL的BLOCK也可以用位运算来表示
 
+//由此看出枚举的作用：即限制了元素种类的数组
 
 enum Object {
 	OBJ_SPACE,
@@ -39,7 +38,8 @@ void initialize(Object* state, int w, int h, const char* stageData) {
 	int x = 0;
 	int y = 0;
 	while (*d != '\0') {
-		//当字符不为NULL时
+		//当字符不为NULL时——cpp中字符数组的以\0结束
+		//声明读取字符
 		Object t;
 		switch(*d) {
 		case '#':t = OBJ_WALL; break;
@@ -47,19 +47,20 @@ void initialize(Object* state, int w, int h, const char* stageData) {
 		case 'o':t = OBJ_BLOCK; break;
 		case 'O':t = OBJ_BLOCK_ON_GOAL; break;
 		case '.':t = OBJ_GOAL; break;
-		case 'p': t = OBJ_MAN; break;
+		case 'p':t = OBJ_MAN; break;
 		case 'P':t = OBJ_MAN_ON_GOAL; break;
-		case '\n': //转到下一行
+		case '\n':
+		//转到下一行并重置坐标
 			x = 0;
 			++y;
 			t = OBJ_UNKNOWN;
 			break;
+		//如果没有符合的，即读取了未知字符
 		default: t = OBJ_UNKNOWN; break;
 
 		}
-
 		++d;
-		//如果遇到未知字符，无视
+		//如果遇到未知字符，无视，否则写入
 		if (t != OBJ_UNKNOWN) {
 			state[y * w + x] = t; //写入
 			++x;
@@ -89,9 +90,9 @@ void update(Object* s, char input, int w, int h) {
 
 	switch(input) {
 		case 'a':dx = -1; break;
-		case 's': dy = -1; break;
-		case'w': dy = 1; break;
-		case 'd': dx = 1; break;
+		case 's':dy = -1; break;
+		case 'w':dy = 1; break;
+		case 'd':dx = 1; break;
 	}
 
 	//查找玩家的坐标——查找对应数据并通关运算得到其位置。
@@ -112,21 +113,23 @@ void update(Object* s, char input, int w, int h) {
 	//移动后的坐标是否在允许范围内
 	int tx = x + dx;
 	int ty = y + dy;
+
 	//检查坐标的最大值和最小值，超出范围则不允许
 	if (tx < 0 || ty < 0 || tx >= w || ty >= h) {
 		return;
 	}
 
-	//A 要移动到的位置是空白或者目的地，玩家移动
 	int p = y * w + x;	//玩家位置
 	int tp = ty * w + tx;	//目标位置
+	//A 要移动到的位置是空白或者目的地，玩家移动
 	if (s[tp] == OBJ_SPACE || s[tp] == OBJ_GOAL) {
 		//如果是目的地，则将该处设置为“OBJ_MAN_ON_GOAL
 		s[tp] = (s[tp] == OBJ_GOAL) ? OBJ_MAN_ON_GOAL : OBJ_MAN;
 		//如果已经在目的地了，则将玩家所在的位置设置为目的地
-		s[p] = (s[p] == OBJ_MAN_ON_GOAL) ? OBJ_GOAL : OBJ_SPACE;
-		//B. 要移动到的位置有箱子。如果沿该方向的下一个网格是空白或者目的地，则移动
+		s[p] = (s[p] == OBJ_MAN_ON_GOAL) ? OBJ_GOAL : OBJ_SPACE;	
 	}
+	//B. 要移动到的位置有箱子——即“推箱子”。
+	//如果沿该方向的下一个网格是空白或者目的地，则移动。
 	else if (s[tp] == OBJ_BLOCK || s[tp] == OBJ_BLOCK_ON_GOAL) {
 		//检测沿该方向的第二个网格的位置是否在允许范围内
 		int tx2 = tx + dx;
@@ -134,14 +137,29 @@ void update(Object* s, char input, int w, int h) {
 		if (tx2 < 0 || ty2 < 0 || tx2 >= w || ty2 >= h) {
 			return;
 		}
-		//沿该方向的第二个网格的位置
+		//可以推动箱子合法，估计箱子的tp
 		int tp2 = (ty + dy) * w + (tx + dx);
-		if (s[tp2]==)
+		if (s[tp2] == OBJ_BLOCK || s[tp2] == OBJ_BLOCK_ON_GOAL) {
+			//逐个替换
+			s[tp2] = (s[tp2] == OBJ_GOAL) ?
+				OBJ_BLOCK_ON_GOAL : OBJ_BLOCK;
+			s[tp] = (s[tp] == OBJ_GOAL) ?
+				OBJ_MAN_ON_GOAL : OBJ_MAN;
+			s[p] = (s[p] == OBJ_MAN_ON_GOAL) ?
+				OBJ_GOAL : OBJ_SPACE;
+		}
 	}
 
 }
 
-void checkClear(const Object* state, int w, int h);
+bool checkClear(const Object* state, int w, int h) {
+	for (int i = 0; i < w*h; ++i) {
+		if (state[i] == OBJ_GOAL) {
+			return false;
+		}
+	}
+	return true;
+}
 
 
 
@@ -168,7 +186,7 @@ int main()
 	}
 	//胜利时候的提示
 	cout << "Congratulation's: you win." << endl;
-	//通关
+	//通关后的手动垃圾清理
 	delete[] state; //通过new创建的数组不能使用delete，而是delete[]
 	state = 0;
 
