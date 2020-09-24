@@ -1,2 +1,4 @@
-﻿  pushing.cpp
-  pushing.vcxproj -> E:\Git\本地仓\JustPractice\pushing\Debug\pushing.exe
+﻿  practice.cpp
+E:\Local\JustPractice\pushing\practice.cpp(110,17): error C2059: 语法错误:“)”
+  pushing.cpp
+  正在生成代码...
